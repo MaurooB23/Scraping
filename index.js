@@ -3,7 +3,7 @@ const fs = require('fs');
 
 (async () => { 
 
-  const browser = await chromium.launch({ headless: true });  //Lo dejo en true para que no te abra el navegador, si queres que te lo abra ponelo en false
+  const browser = await chromium.launch({ headless: true }); 
   const page = await browser.newPage();
   await page.goto('https://pency.app/disglutenfree');
 
@@ -56,36 +56,42 @@ const fs = require('fs');
           const descripcion = ps[1] ? await ps[1].innerText() : 'Sin descripción'; 
 
           const precioElement = await producto.$('p.css-lb7l61'); 
-          const precio = precioElement ? await precioElement.innerText() : 'Sin precio'; 
-    /*
-          await producto.click(); 
-          await page.waitForTimeout(700);             
+          const precio = precioElement ? await precioElement.innerText() : 'Sin precio';
 
-          const botonSumarSelector = 'button[aria-label="sumar"]';
-          let botonSumar = await page.$(botonSumarSelector);
-  
-          let cantidadStock = 0;
+          let stock = 'No especificado';
 
-          while (botonSumar) {                                           //Este es el while que iba recorriendo producto por producto para poder averiguar el stock, te lo dejo comentado por si quiseras probarlo pero demora mucho el programa
-              const isDisabled = await botonSumar.isDisabled(); 
-              if (isDisabled) break;
-              await botonSumar.click(); 
-              botonSumar = await page.$(botonSumarSelector); 
-              const cantidadElement = await page.$('p.css-1ikoxeq'); 
-              const stockTexto = cantidadElement ? await cantidadElement.innerText() : '0';
-              cantidadStock = parseInt(stockTexto.replace(/\D/g, '')) || 0;
-              if (cantidadStock >= 100) break; 
-            }
+          const stockDisponible = await producto.$('p.css-11cvmn9');
+          const sinStock = await producto.$('.css-a8b72n');
 
-          const volverAtras = await page.$('div.css-6lhw58'); 
-          await volverAtras.click() 
-          //await page.waitForTimeout(300) 
-     */
+                if (stockDisponible) {
+                  stock = await stockDisponible.innerText();
+                } else if (sinStock) {
+                  stock = 'Sin stock';
+                } else {
+                  stock = 'Stock disponible';
+                }
+
+                /*
+              const divImagen = await producto.$('.css-1y5iw82');
+              let imagen = 'Sin imagen';
+
+              if (divImagen) {
+                const estilo = await divImagen.evaluate(el => getComputedStyle(el).getPropertyValue('background-image'));
+                const match = estilo.match(/url\("(.*)"\)/);
+
+                if (match && match[1]) {
+                  imagen = match[1];
+                }
+              }
+                */
+       
+
           productosCategoria.push({ 
             nombre,
             descripcion,
             precio,
-            //Stock: cantidadStock
+            stock
+            //imagen
           });
         }
 
@@ -115,7 +121,7 @@ const fs = require('fs');
   let filename = `${baseName}${extension}`;
 
  if (fs.existsSync(filename)) { 
-  console.log(`Archivo "${filename}" eliminado.`); //Cree este metodo para que guarde todos los datos en una rchivo json, cada vez que se ejecuta el codigo lo borra y lo vuelve a crear en forma de UPDATE
+  console.log(`Archivo "${filename}" eliminado.`); 
 }
 
 
