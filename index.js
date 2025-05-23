@@ -3,7 +3,7 @@ const fs = require('fs');
 
 (async () => { 
 
-  const browser = await chromium.launch({ headless: true }); 
+  const browser = await chromium.launch({ headless: false }); 
   const page = await browser.newPage();
   await page.goto('https://pency.app/disglutenfree');
 
@@ -72,18 +72,24 @@ const fs = require('fs');
                 }
 
                 /*
-              const divImagen = await producto.$('.css-1y5iw82');
-              let imagen = 'Sin imagen';
+                
+                for (const div of posiblesDivs) {
+                  const childCount = await div.evaluate(el => el.children.length);
+                  if (childCount === 0) { // solo consideramos divs sin hijos
+                    const urlImagen = await div.evaluate(el => {
+                      const style = window.getComputedStyle(el);
+                      const bgImage = style.getPropertyValue('background-image');
+                      const match = bgImage.match(/url\("?(.*?)"?\)/);
+                      return match ? match[1] : null;
+                    });
 
-              if (divImagen) {
-                const estilo = await divImagen.evaluate(el => getComputedStyle(el).getPropertyValue('background-image'));
-                const match = estilo.match(/url\("(.*)"\)/);
+                    if (urlImagen) {
+                      imagen = urlImagen;
+                      break;
+                    }
 
-                if (match && match[1]) {
-                  imagen = match[1];
-                }
-              }
-                */
+                  */
+
        
 
           productosCategoria.push({ 
