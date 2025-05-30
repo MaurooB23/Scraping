@@ -66,26 +66,39 @@
                     stock = 'Stock disponible';
                   }
 
-                    // ABRIR DETALLE DE PRODUCTO
+                    
                     await producto.scrollIntoViewIfNeeded();
                     await page.waitForTimeout(300);
                     await producto.click();
                     console.log(`Producto ${j + 1} abierto.`);
 
-                     // ESPERAR QUE SE CARGUE DETALLE
+                     
                    await page.waitForSelector('#cart-item.css-1bg54gv', { timeout: 3000 });
-                    const contenedorProducto = await page.$('#cart-item.css-1bg54gv');
-
+                   const contenedorProducto = await page.$('#cart-item.css-1bg54gv');
+                   let imageUrl = 'No disponible';
 
                     if (contenedorProducto) {
-                      // Buscar el contenedor de la imagen dentro del producto activo
                       const contenedorImagen = await contenedorProducto.$('.css-439enl > div');
+                      
                       if (contenedorImagen) {
                         await contenedorImagen.scrollIntoViewIfNeeded();
                         await page.waitForTimeout(200);
                         await contenedorImagen.click();
                         console.log(`Imagen del producto ${j + 1} abierta.`);
-                        await page.waitForTimeout(1000); // tiempo para visualizar la imagen
+                        await page.waitForTimeout(1000); 
+
+                        const style = await contenedorImagen.evaluate(el => {
+                          return window.getComputedStyle(el).backgroundImage;
+                        });
+
+                        const match = style.match(/url\("(.*?)"\)/);
+                        if (match && match[1]) {
+                          imageUrl = match[1];
+                          console.log(`URL de imagen extraída: ${imageUrl}`);
+                        } else {
+                          console.warn(`No se pudo extraer la URL de la imagen para producto ${j + 1}.`);
+                        }
+                        
                       } else {
                         console.warn(` Imagen no encontrada para producto ${j + 1}.`);
                       }
@@ -109,7 +122,8 @@
                     nombre,
                     descripcion,
                     precio,
-                    stock
+                    stock,
+                    imageUrl
                   });
 
                 } catch (err) {
