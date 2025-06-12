@@ -31,33 +31,91 @@ async function insertCategoriaIfNotExists(nombreCategoria) {
 
 async function insertDescripcionIfNotExists(descripcionTexto) {
   try {
-    if (!descripcionTexto || descripcionTexto.trim() === '') {
-      console.log('Descripción vacía o nula, se omite.');
-      return;
-    }
+    const descripcionFinal = (!descripcionTexto || descripcionTexto.trim() === '')
+      ? 'Sin descripción'
+      : descripcionTexto.trim();
 
-    const result = await pool.query(
-      'SELECT * FROM "Descripcion" WHERE "descripcion" = $1',
-      [descripcionTexto]
+    const insertResult = await pool.query(
+      `INSERT INTO "Descripcion" (
+        "descripcion", 
+        "caracteristicas", 
+        "available", 
+        "createdAt", 
+        "updatedAt"
+      )
+      VALUES ($1, $2, true, NOW(), NOW())
+      RETURNING id`,
+      [descripcionFinal, null]
     );
 
-    if (result.rows.length > 0) {
-      console.log('Descripción ya existe:', descripcionTexto.slice(0, 40) + '...');
-      return;
-    }
+    console.log('Descripción insertada:', descripcionFinal.slice(0, 40) + '...');
+    return insertResult.rows[0].id;
 
-    await pool.query(
-      `INSERT INTO "Descripcion" ("descripcion", "caracteristicas", "available", "createdAt", "updatedAt")
-       VALUES ($1, $2, true, NOW(), NOW())`,
-      [descripcionTexto, null]
-    );
-
-    console.log('Descripción insertada:', descripcionTexto.slice(0, 40) + '...');
   } catch (error) {
     console.error('Error al insertar la descripción:', error.message);
+    return null;
   }
 }
 
+async function insertProducto(producto, descripcionId) {
+  try {
+    const { nombre, precio, stock } = producto;
+
+    const precioNumerico = parseFloat(precio.replace('$', '').replace(',', '.').trim()) || 0;
+
+    let stockNum = null;
+
+    if (typeof stock === 'string') {
+      if (stock.includes('Últimas')) {
+        const match = stock.match(/\d+/);
+        stockNum = match ? parseInt(match[0]) : null;
+      } else if (stock === 'Sin stock' || stock === 'No hay Stock') {
+        stockNum = 0;
+      } else if (stock === 'Stock disponible') {
+        stockNum = null;
+      } else {
+        stockNum = null;
+      }
+    } else {
+      stockNum = null;
+    }
+
+    await pool.query(
+      `INSERT INTO "Product" (
+        nombre,
+        precio,
+        marca,
+        stock,
+        available,
+        "createdAt",
+        "updatedAt",
+        "tipoProductoId",
+        "descripcionId",
+        "tiposUsoId",
+        "proveedorId"
+      ) VALUES ($1, $2, $3, $4, true, NOW(), NOW(), $5, $6, $7, $8)`,
+      [
+        nombre,
+        precioNumerico,
+        null,              // marca
+        stockNum,
+        null,              // tipoProductoId
+        descripcionId,
+        null,              // tiposUsoId
+        null               // proveedorId
+      ]
+    );
+
+    console.log(`Producto insertado: ${nombre.slice(0, 40)}...`);
+
+  } catch (error) {
+    console.error('Error al insertar producto:', error.message);
+  }
+}
+
+
+
+
 console.log('dbOperation.js cargado correctamente');
 
-module.exports = { insertCategoriaIfNotExists, insertDescripcionIfNotExists };
+module.exports = { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto };

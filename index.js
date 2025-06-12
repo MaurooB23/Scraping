@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
-const { insertCategoriaIfNotExists, insertDescripcionIfNotExists  } = require('./dbOperation');
+const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto  } = require('./dbOperation');
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
@@ -178,7 +178,8 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists  } = require('.
 
         await insertCategoriaIfNotExists(nombreCategoria);
         for (const producto of productosCategoria) {
-        await insertDescripcionIfNotExists(producto.descripcion);
+        const descripcionId = await insertDescripcionIfNotExists(producto.descripcion);
+        await insertProducto(producto, descripcionId);
       }
 
       } else {
