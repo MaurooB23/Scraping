@@ -72,13 +72,11 @@ async function insertProducto(producto, descripcionId) {
       } else if (stock === 'Sin stock' || stock === 'No hay Stock') {
         stockNum = 0;
       } else if (stock === 'Stock disponible') {
-        stockNum = null;
+        stockNum = 100;
       } else {
-        stockNum = null;
+        stockNum = 10;
       }
-    } else {
-      stockNum = null;
-    }
+    } 
 
     await pool.query(
       `INSERT INTO "Product" (
@@ -97,7 +95,7 @@ async function insertProducto(producto, descripcionId) {
       [
         nombre,
         precioNumerico,
-        null,              // marca
+        "Sin Marca",              // marca
         stockNum,
         null,              // tipoProductoId
         descripcionId,
@@ -109,7 +107,7 @@ async function insertProducto(producto, descripcionId) {
     console.log(`Producto insertado: ${nombre.slice(0, 40)}...`);
 
   } catch (error) {
-    console.error('Error al insertar producto:', error.message);
+    console.error('Error al insertar producto:', error);
   }
 }
 

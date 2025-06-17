@@ -212,3 +212,20 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
   console.log(`Archivo "${filename}" guardado correctamente.`);
   // --- FIN DE NUEVAS LINEAS ---
 })();
+
+/*
+
+A TENER EN CUENTA:
+ALTER TABLE "Product"
+ALTER COLUMN "tipoProductoId" DROP NOT NULL;
+
+ALTER TABLE "Product"
+ALTER COLUMN "tiposUsoId" DROP NOT NULL;
+
+ALTER TABLE "Product"
+ALTER COLUMN "proveedorId" DROP NOT NULL;
+
+Cambie estas columnas a que puedan aceptar null para que me deje insertar los productos mientras que las otras tablas no son trabajadas.
+
+
+*/
