@@ -76,9 +76,9 @@ async function insertProducto(producto, descripcionId) {
       } else {
         stockNum = 10;
       }
-    } 
+    }
 
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO "Product" (
         nombre,
         precio,
@@ -91,23 +91,52 @@ async function insertProducto(producto, descripcionId) {
         "descripcionId",
         "tiposUsoId",
         "proveedorId"
-      ) VALUES ($1, $2, $3, $4, true, NOW(), NOW(), $5, $6, $7, $8)`,
+      ) VALUES ($1, $2, $3, $4, true, NOW(), NOW(), $5, $6, $7, $8)
+      RETURNING id`,
       [
         nombre,
         precioNumerico,
-        "Sin Marca",              // marca
+        "Sin Marca",         // marca
         stockNum,
-        null,              // tipoProductoId
+        null,                // tipoProductoId
         descripcionId,
-        null,              // tiposUsoId
-        null               // proveedorId
+        null,                // tiposUsoId
+        null                 // proveedorId
       ]
     );
 
-    console.log(`Producto insertado: ${nombre.slice(0, 40)}...`);
+    const productoId = result.rows[0].id;
+    console.log(`Producto insertado: ${nombre.slice(0, 40)}... (ID: ${productoId})`);
+
+    return productoId;
 
   } catch (error) {
     console.error('Error al insertar producto:', error);
+    return null;
+  }
+}
+
+
+async function insertImagen(url, productoId) {
+  try {
+    const tipoImagen = "principal"; // o "extra", "vista", lo que prefieras
+    const descripcion = "Imagen generada automáticamente";
+
+    await pool.query(
+      `INSERT INTO "Imagen" (
+        available,
+        "tipoImagen",
+        descripcion,
+        "urlImagen",
+        "productoId"
+      ) VALUES (true, $1, $2, $3, $4)`,
+      [tipoImagen, descripcion, url, productoId]
+    );
+
+    console.log(`Imagen insertada para producto ID: ${productoId}`);
+
+  } catch (error) {
+    console.error('Error al insertar imagen:', error);
   }
 }
 
@@ -116,4 +145,4 @@ async function insertProducto(producto, descripcionId) {
 
 console.log('dbOperation.js cargado correctamente');
 
-module.exports = { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto };
+module.exports = { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto, insertImagen };

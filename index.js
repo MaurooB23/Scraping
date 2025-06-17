@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
-const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto  } = require('./dbOperation');
+const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto, insertImagen  } = require('./dbOperation');
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
@@ -179,8 +179,15 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
         await insertCategoriaIfNotExists(nombreCategoria);
         for (const producto of productosCategoria) {
         const descripcionId = await insertDescripcionIfNotExists(producto.descripcion);
-        await insertProducto(producto, descripcionId);
+        const productoId = await insertProducto(producto, descripcionId);
+
+        if (producto.imageUrls && producto.imageUrls.length > 0) {
+          for (const url of producto.imageUrls) {
+            await insertImagen(url, productoId);
+          }
+        }
       }
+
 
       } else {
         console.log(`No se encontró el ícono en la categoría ${i + 1}.`);
