@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 const fs = require('fs');
-const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto, insertImagen  } = require('./dbOperation');
+const { insertDescripcionIfNotExists, insertProducto, insertImagen } = require('./dbOperation');
 
 (async () => {
   const browser = await chromium.launch({ headless: false });
@@ -8,7 +8,6 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
   await page.goto('https://pency.app/disglutenfree');
 
   const data = [];
-  // const categoriasIgnoradas = ['Argendiet', 'Bad Monkey', 'Bastiano', 'Biofarv'];
 
   try {
     await page.waitForSelector('button[data-test-id="product-onboarding-close"]', { timeout: 300 });
@@ -18,43 +17,31 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
     console.log('No apareció el modal, continuando...');
   }
 
-  //Para tiempos de espera mas cortos:
-  // await page.waitForTimeout(100);
-  // await page.mouse.wheel(0, 10000);
-  // await page.waitForTimeout(100);
-
   await page.waitForTimeout(1000);
   await page.mouse.wheel(0, 10000);
   await page.waitForTimeout(1000);
 
-  const categoryContainers = await page.$$('.css-a6fk9l, .css-xyh1ff');
-  console.log(`Se encontraron ${categoryContainers.length} contenedores de categoría.`);
+  const marcaContainers = await page.$$('.css-a6fk9l, .css-xyh1ff');
+  console.log(`Se encontraron ${marcaContainers.length} contenedores de marca.`);
 
-  for (let i = 0; i < categoryContainers.length; i++) {
+  for (let i = 0; i < marcaContainers.length; i++) {
     try {
-      const container = categoryContainers[i];
+      const container = marcaContainers[i];
       const svgIcon = await container.$('svg.feather-chevron-down');
 
       if (svgIcon) {
-        const tituloCategoria = await container.$('p.css-18v1jhz');
-        const nombreCategoria = tituloCategoria ? await tituloCategoria.innerText() : `Categoría ${i + 1}`;
-       
-
-        //saltear categorias para probar varias imagenes
-        // if (categoriasIgnoradas.includes(nombreCategoria.trim())) {
-        //   console.log(`Saltando categoría ignorada: ${nombreCategoria}`);
-        //   continue;
-        // }
+        const tituloMarca = await container.$('p.css-18v1jhz');
+        const nombreMarca = tituloMarca ? await tituloMarca.innerText() : `Marca ${i + 1}`;
 
         await svgIcon.scrollIntoViewIfNeeded();
         await page.waitForTimeout(50);
         await svgIcon.click();
-        console.log(`Categoría "${nombreCategoria}" expandida.`);
+        console.log(`Marca "${nombreMarca}" expandida.`);
         await page.waitForTimeout(50);
 
         const productos = await page.$$('.css-xxs8cq');
-        console.log(` Se encontraron ${productos.length} productos en "${nombreCategoria}"`);
-        const productosCategoria = [];
+        console.log(`Se encontraron ${productos.length} productos en "${nombreMarca}"`);
+        const productosMarca = [];
 
         for (let j = 0; j < productos.length; j++) {
           try {
@@ -82,7 +69,6 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
             }
 
             await producto.scrollIntoViewIfNeeded();
-            //await page.waitForTimeout(300);
             await page.waitForTimeout(1000);
             await producto.click();
             console.log(`Producto ${j + 1} abierto.`);
@@ -109,16 +95,13 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
                     continue;
                   }
 
-                await carrusel.evaluate((el, index) => {
+                  await carrusel.evaluate((el, index) => {
                     el.scrollLeft = el.clientWidth * index;
-                }, k);
+                  }, k);
 
-                await page.waitForTimeout(1000);
-
-                // Forzar que el div con la imagen entre en pantalla
-                await primerHijo.scrollIntoViewIfNeeded();
-                await page.waitForTimeout(1500);
-
+                  await page.waitForTimeout(1000);
+                  await primerHijo.scrollIntoViewIfNeeded();
+                  await page.waitForTimeout(1500);
 
                   let backgroundImage = '';
                   for (let intento = 0; intento < 5; intento++) {
@@ -157,11 +140,12 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
 
             await page.waitForTimeout(1000);
 
-            productosCategoria.push({
+            productosMarca.push({
               nombre,
               descripcion,
               precio,
               stock,
+              marca: nombreMarca,
               imageUrls
             });
 
@@ -172,41 +156,37 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
         }
 
         data.push({
-          categoria: nombreCategoria,
-          productos: productosCategoria
+          marca: nombreMarca,
+          productos: productosMarca
         });
 
-        await insertCategoriaIfNotExists(nombreCategoria);
-        for (const producto of productosCategoria) {
-        const descripcionId = await insertDescripcionIfNotExists(producto.descripcion);
-        const productoId = await insertProducto(producto, descripcionId);
+        for (const producto of productosMarca) {
+          const descripcionId = await insertDescripcionIfNotExists(producto.descripcion);
+          const productoId = await insertProducto(producto, descripcionId);
 
-        if (producto.imageUrls && producto.imageUrls.length > 0) {
-          for (const url of producto.imageUrls) {
-            await insertImagen(url, productoId);
+          if (producto.imageUrls && producto.imageUrls.length > 0) {
+            for (const url of producto.imageUrls) {
+              await insertImagen(url, productoId);
+            }
           }
         }
-      }
-
 
       } else {
-        console.log(`No se encontró el ícono en la categoría ${i + 1}.`);
+        console.log(`No se encontró el ícono en la marca ${i + 1}.`);
       }
 
     } catch (err) {
-      console.error(`Error al expandir la categoría ${i + 1}:`, err.message);
+      console.error(`Error al expandir la marca ${i + 1}:`, err.message);
     }
 
     console.log(JSON.stringify(data, null, 2));
   }
 
   await browser.close();
-  
 
-  // 2. Backup en JSON (código existente que se mantiene igual)
   const baseName = 'productos';
   const extension = '.json';
-  const date = new Date()
+  const date = new Date();
   const day = `pency-${date.getDay()}-${date.getMonth() + 1}-${date.getFullYear()}-${Date.now()}`;
   const filename = `${baseName}-${day}${extension}`;
 
@@ -217,22 +197,4 @@ const { insertCategoriaIfNotExists, insertDescripcionIfNotExists, insertProducto
 
   fs.writeFileSync(filename, JSON.stringify(data, null, 2));
   console.log(`Archivo "${filename}" guardado correctamente.`);
-  // --- FIN DE NUEVAS LINEAS ---
 })();
-
-/*
-
-A TENER EN CUENTA:
-ALTER TABLE "Product"
-ALTER COLUMN "tipoProductoId" DROP NOT NULL;
-
-ALTER TABLE "Product"
-ALTER COLUMN "tiposUsoId" DROP NOT NULL;
-
-ALTER TABLE "Product"
-ALTER COLUMN "proveedorId" DROP NOT NULL;
-
-Cambie estas columnas a que puedan aceptar null para que me deje insertar los productos mientras que las otras tablas no son trabajadas.
-
-
-*/
